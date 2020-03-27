@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+		<script th:src="@{/js/jquery-3.4.1.min.js}"></script>
+		<script th:src="@{/js/jquerysession.js}"></script>
+		<script th:src="@{/js/bootstrap.min.js}"></script>
+		<script th:src="@{/js/three.js}"></script>
+		<title></title>
+		<style type="text/css">
+			.snow{
+				position: fixed;
+				left: 0;
+				right: 0;
+				top: 0;
+				bottom: 0;
+				pointer-events: none;
+				z-index: 9999;
+
+			}
+			.snow canvas{
+				height: 100%;
+				width: 100%;
+				position: absolute;
+				left: 0;
+				top: 0;
+			}
+			#appBox{
+				position: relative;
+				width: 100%;
+				height: auto;
+				background:  #99FFCC;
+			}
+			#app{
+				position: relative;
+				width: 80%;
+				margin: 0px auto;
+			}
+			#app .box{
+				background: #FFFF99;
+				border:2px solid #FFFFCC;
+			}
+			.up{
+				position: relative;
+				width: 100%;
+				height: 80px;
+
+			}
+			.up img{
+				position: absolute;
+				width: 10%;
+				height: 100%;
+				border-radius: 50%;
+			}
+			.up a{
+				position: absolute;
+				width: auto;
+				height: 30%;
+				left: 15%;
+			}
+			.up .date{
+				position: absolute;
+				width: auto;
+				height: 30%;
+				left: 15%;
+				top: 40%;
+			}
+
+			.up .title{
+				position: absolute;
+				width: auto;
+				height: 40%;
+				left: 45%;
+				font-size: 25px;
+			}
+			.up .place{
+				position: absolute;
+				width: auto;
+				height: 30%;
+				top: 40%;
+				left: 48%;
+			}
+			.down{
+				width: 100%;
+				background: #FFFFCC;
+			}
+			.down .info{
+				height: auto;
+				width: 100%;
+			}
+			.down .info p{
+				font-size: 16px;
+			}
+			.down .images{
+				width: 100%;
+				height: auto;
+				background: #CCFF99;
+
+			}
+			.down .images img{
+				margin-left: 20px;
+				height: 200px;
+				width: 150px;
+			}
+
+			.comment{
+				position: relative;
+				height: 60px;
+				background: #F1E1FF;
+				margin: 5px;
+			}
+			.comment img{
+				position: absolute;
+				width: 6%;
+				height: 60px;
+				left: 0%;
+				border-radius: 50%;
+			}
+			.comment .contentUp{
+				position: absolute;
+				width: 94%;
+				height: 50%;
+				left: 6%;
+
+			}
+			.comment .contentUp a{
+				margin-left: 10px;
+				margin-top: 10px;
+			}
+			.comment .contentUp span{
+				margin-top: 10px;
+			}
+			.comment .contentDown{
+				position: absolute;
+				width: 94%;
+				height: 50%;
+				left: 6%;
+				top: 50%;
+			}
+			.comment .contentDown span{
+				margin-left: 10px;
+				margin-top: 10px;
+			}
+			#answerBox{
+				position: fixed;
+				top: -100px;
+				opacity: 0;
+			}
+
+		</style>
+	</head>
+	<body>
+        <div class="snow">
+            <canvas>
+            </canvas>
+        </div>
+
+	<script type="text/javascript">
+        $(".snow").eq(0).css({"width":window.innerWidth,"height":window.innerHeight})
+		$(function() {
+
+			if (/MSIE 6|MSIE 7|MSIE 8/.test(navigator.userAgent)) {
+				return
+			}
+			var container = document.querySelector(".snow");
+// IE9-10 pointer-events兼容
+			if (/MSIE 9|MSIE 10/.test(navigator.userAgent)) {
+				$(container).bind('click mousemove', function(evt) {
+					this.style.display = 'none';
+					var x = evt.pageX, y = evt.pageY
+					if ($(document).scrollTop() > 0 || $(document).scrollTop() > 0) {
+						x = x - $(document).scrollLeft() + 1
+						y = y - $(document).scrollTop() + 1
+					}
+					evt.preventDefault();
+					evt.stopPropagation();
+					var under = document.elementFromPoint(x, y);
+					var evtType = evt.type === 'click' ? 'click' : 'mouseenter'
+					if (evt.type === 'click') {
+						$(under)[0].click();
+					} else {
+						$(under).trigger('mouseenter');
+					}
+					$('body').css('cursor', 'default')
+					this.style.display = '';
+					return false;
+				});
+			}
+			var containerWidth = $(container).width();
+			var containerHeight = $(container).height();
+			var particle;
+			var camera;
+			var scene;
+			var renderer;
+			var mouseX = 0;
+			var mouseY = 0;
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+			var particles = [];
+			var particleImages = [new Image(),new Image(),new Image(),new Image(),new Image()];
+			particleImages[0].src = "/img/151375665240370100.png";
+			particleImages[1].src = "/img/151375668550091372.png";
+			particleImages[2].src = "/img/151375669416355455.png";
+			particleImages[3].src = "/img/151375670204115466.png";
+			particleImages[4].src = "/img/151375671039447316.png";
+			var snowNum = 300;
+			function init() {
+				camera = new THREE.PerspectiveCamera(75, containerWidth / containerHeight, 1, 10000);
+				camera.position.z = 1000;
+				scene = new THREE.Scene();
+				scene.add(camera);
+				renderer = new THREE.CanvasRenderer();
+				renderer.setSize(containerWidth, containerHeight);
+				for (var i = 0; i < snowNum; i++) {
+					var material = new THREE.ParticleBasicMaterial({ map: new THREE.Texture(particleImages[i % 5]) });
+					particle = new Particle3D(material);
+					particle.position.x = Math.random() * 2000 - 1000;
+					particle.position.y = Math.random() * 2000 - 1000;
+					particle.position.z = Math.random() * 2000 - 1000;
+					particle.scale.x = particle.scale.y = 1;
+					scene.add(particle);
+					particles.push(particle)
+				}
+				container.appendChild(renderer.domElement);
+				document.addEventListener("mousemove", onDocumentMouseMove, false);
+				document.addEventListener("touchstart", onDocumentTouchStart, false);
+				document.addEventListener("touchmove", onDocumentTouchMove, false);
+				setInterval(loop, 1000 / 50)
+			}
+			function onDocumentMouseMove(event) {
+				mouseX = event.clientX - windowHalfX;
+				mouseY = event.clientY - windowHalfY
+			}
+			function onDocumentTouchStart(event) {
+				if (event.touches.length === 1) {
+					event.preventDefault();
+					mouseX = event.touches[0].pageX - windowHalfX;
+					mouseY = event.touches[0].pageY - windowHalfY
+				}
+			}
+			function onDocumentTouchMove(event) {
+				if (event.touches.length === 1) {
+					event.preventDefault();
+					mouseX = event.touches[0].pageX - windowHalfX;
+					mouseY = event.touches[0].pageY - windowHalfY
+				}
+			}
+			function loop() {
+				for (var i = 0; i < particles.length; i++) {
+					var particle = particles[i];
+// 滚动到楼层模块，减少雪花 （自定义）
+					if ($(window).scrollTop() < 1000) {
+						particle.scale.x = particle.scale.y = 1;
+					} else {
+						if (i > particles.length / 5 * 3) {
+							particle.scale.x = particle.scale.y = 0;
+						} else {
+							particle.scale.x = particle.scale.y = 0.8;
+						}
+					}
+					particle.updatePhysics();
+					with(particle.position) {
+						if (y < -1000) {
+							y += 2000
+						}
+						if (x > 1000) {
+							x -= 2000
+						} else {
+							if (x < -1000) {
+								x += 2000
+							}
+						}
+						if (z > 1000) {
+							z -= 2000
+						} else {
+							if (z < -1000) {
+								z += 2000
+							}
+						}
+					}
+				}
+				camera.position.x += (mouseX - camera.position.x) * 0.005;
+				camera.position.y += (-mouseY - camera.position.y) * 0.005;
+				camera.lookAt(scene.position);
+				renderer.render(scene, camera)
+			}
+			init()
+		});
+	</script>
+
+		<div id="appBox">
+			<div id="app">
+				<!--导航栏 ↓-->
+				<nav class="navbar navbar-default navbar-fixed-top">
+					<div class="container-fluid">
+						<!-- Brand and toggle get grouped for better mobile display -->
+						<div class="navbar-header">
+							<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+								<span class="sr-only">Toggle navigation</span>
+								<span class="icon-bar"></span>
+								<span class="icon-bar"></span>
+								<span class="icon-bar"></span>
+							</button>
+							<a class="navbar-brand" href="/">首页</a>
+						</div>
+
+						<!-- Collect the nav links, forms, and other content for toggling -->
+						<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+							<ul class="nav navbar-nav">
+								<li class="active"><a class="active" href="/travel/dynamic">动态</a></li>
+
+								<li><a th:href="${session.person!=null}?'/travel/create':'javascript:open();'">记录个人旅程</a></li>
+							</ul>
+							<form action="/travel/dynamic" class="navbar-form navbar-left" method="get">
+								<div class="form-group">
+									<input type="text" class="form-control" name="keyWord" placeholder="请输入关键字">
+								</div>
+								<button type="submit" class="btn btn-default">搜索</button>
+							</form>
+							<ul th:if="${session.person==null}"  class="nav navbar-nav navbar-right">
+								<li><a href="/account/register">注册</a></li>
+								<li><a class="open">登录</a></li>
+							</ul>
+							<ul  th:if="${session.person!=null}"  class="nav navbar-nav navbar-right">
+								<li class="dropdown" >
+									<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+										<img style="width:22px;height:22px;" alt="" th:src="${session.person.headportrait}" class="img-rounded">
+										[[${session.person.nickname}]]   <span class="caret"></span>
+									</a>
+									<ul class="dropdown-menu">
+										<li><a href="/person/personMessage">个人主页</a></li>
+										<li><a href="/person/password">修改密码</a></li>
+										<li role="separator" class="divider"></li>
+										<li><a href="javascript:cancellation()">退出登录</a></li>
+									</ul>
+								</li>
+							</ul>
+						</div><!-- /.navbar-collapse -->
+					</div><!-- /.container-fluid -->
+				</nav>
+				<!--导航栏 ↑-->
+				<!--登录框↓-->
+				<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+					<div class="modal-dialog">
+						<div class="modal-content">
+							<div class="modal-header">
+								<button type="button" class="close" data-dismiss="modal"  aria-hidden="true">&times;</button>
+								<h4 class="modal-title" id="myModalLabel">欢迎登录个人旅行日志</h4>
+							</div>
+							<div class="modal-body">
+								<form>
+									<div class="form-group">
+										<label for="account">账号</label>
+										<input type="text" class="form-control" id="account" placeholder="请输入账号">
+									</div>
+									<div class="form-group">
+										<label for="password">密码</label>
+										<input type="password" class="form-control" id="password" placeholder="请输入密码">
+									</div>
+								</form>
+
+							</div>
+							<div class="modal-footer">
+								<button type="button" class="btn btn-default" data-dismiss="modal" >取消</button>
+								<button type="button" class="btn btn-primary" id="login"  >登录</button>
+								<p class="tip" style="opacity: 0">用户名不能为空</p>
+							</div>
+						</div><!-- /.modal-content -->
+					</div><!-- /.modal -->
+				</div>
+				<!--登录框 ↑-->
+
+
+
+				<div class="box" >
+					<div class="up">
+						<span id="logId" style="display: none">[[${session.travelDetail.travellog.id}]]</span>
+						<img th:src="${session.travelDetail.travellog.headportrait}" >
+						<a>	[[${session.travelDetail.travellog.nickname}]]</a>
+						<p class="date">[[${session.travelDetail.travellog.logdate}]]</p>
+						<p class="title">[[${session.travelDetail.travellog.title}]]</p>
+						<p class="place">[[${session.travelDetail.travellog.place}]]</p>
+					</div>
+					<div class="down">
+						<div class="info">
+							<p >
+								[[${session.travelDetail.content}]]
+							</p>
+						</div>
+						<div class="images">
+							<span th:each="image:${session.travelDetail.images}">
+								<img  th:src="${image}" >
+							</span>
+						</div>
+					</div>
+				</div>
+				<div class="panel panel-info">
+					<div class="panel-heading">
+						<h3 class="panel-title">评 论</h3>
+					</div>
+					<div id="showComment" class="panel-body">
+					</div>
+					<div  id="editComment" style="position: relative;">
+							<input   type="text" class="form-control" placeholder="评 论">
+							<span style="display: none">[[${session.person==null}?0:1]]</span>
+
+							<div id="edit" style="display: none;">
+								<div id="editText" style="width: 100%;height:120px;overflow:auto; border: 1px solid black" contenteditable="true">
+
+								</div>
+								<div  >
+									<button id="editBtn" type="button" class="btn btn-info" style="position: relative;left: 92%;" >发 表</button>
+								</div>
+							</div>
+					</div>
+				</div>
+
+				<!-- 回复框↓ -->
+				<div id="answerBox">
+					<div class="panel panel-default">
+						<div class="panel-heading">回 复:<span></span></div>
+						<p style="display: none"></p>
+
+						<div class="panel-body">
+							<textarea style="width: 100%;height: 100%;"></textarea>
+							<button  onclick="closeAnswerBox()">取消</button>
+							<button id="answer" style="float: right"  >回 复</button>
+						</div>
+					</div>
+				</div>
+				<!-- 回复框 ↑-->
+			</div>
+		</div>
+	</body>
+</html>
+<script  th:inline="javascript">
+
+	function cancellation(){
+		$.ajax({
+			"url":"/api/v1/account/login/cancellation",
+			"type":"post",
+			"success":function(data){
+				window.location.href="/";
+			},
+			"error":function(e){
+			}
+		})
+	}
+
+	$("#editComment input").click(function () {
+		if ($("#editComment span").text()==1) {
+			$(this).css({"display": "none"})
+			$("#editComment #edit").css({"display": ""})
+			$("#editComment #editText").text("")
+	    }
+	    else{
+	    	open();
+		}
+	})
+
+	$("#editBtn").click(function () {
+		if ($("#editText").text()==""||$("#editText").text()==null){
+			$("#editComment input").css({"display": ""})
+			$("#editComment #edit").css({"display": "none"})
+			return;
+		}
+		sendComment("","",$("#editText").text());
+	})
+
+
+	function sendComment(targetname,targetid,content) {
+		$.ajax({
+			"url":"/api/v1/comment/edit",
+			"type":"post",
+			"data":{
+				"targetname":targetname,
+				"targetid":targetid,
+				"content":content,
+				"logId":$("#logId").text()
+			},
+			"success":function(data){
+				if(data.code==200){
+					$("#editComment input").css({"display": ""})
+					$("#editComment #edit").css({"display": "none"})
+					$("#editComment #editText").text("");
+					window.location.reload();
+				}
+			},
+			"error":function(e){
+			}
+
+		})
+	}
+
+	function closeAnswerBox(){
+		$("#answerBox textarea").val("");
+		$("#answerBox .panel-heading span").text("");
+		$("#answerBox p").text("");
+		$("#answerBox").css({"top":100,"opacity":1}).stop(true).animate({"top":-100,"opacity":0},500)
+	}
+	$("#answer").click(function () {
+
+		var targetname=$("#answerBox .panel-heading span").text();
+		var targetid=$("#answerBox p").text();
+		var content=$("#answerBox textarea").val();
+		closeAnswerBox();
+		sendComment(targetname,targetid,content)
+
+	})
+	function answerBoxShow(msg) {
+		$("#answerBox textarea").val("");
+		$("#answerBox .panel-heading span").text(msg.nickname);
+		if (msg.targetid==null)
+		$("#answerBox p").text(msg.id);
+		else{
+			$("#answerBox p").text(msg.targetid);
+		}
+		$("#answerBox").css({"top":-100,"opacity":0}).stop(true).animate({"top":100,"opacity":1},500)
+	}
+
+	function addOneComment(msg,type) {
+		var comment = document.createElement("div");
+		var headportrait = document.createElement("img");
+		var contentUp = document.createElement("div");
+		var nickname = document.createElement("a");
+
+		var content = document.createElement("span");
+
+		var contentDown = document.createElement("div");
+		var date = document.createElement("span");
+		var answer = document.createElement("a");
+		answer.innerText="回 复";
+		answer.onclick=function(){
+			if ([[${session.person}]]!=null){
+
+				answerBoxShow(msg);
+			}else{
+				open();
+			}
+		}
+		comment.setAttribute("class","comment");
+		if (type==1){
+			$(comment).css({"left":50,"width":$("#showComment").width()-50})
+
+		}else{
+			$(comment).css({"width":$("#showComment").width()})
+		}
+		headportrait.setAttribute("src",msg.headportrait);
+		contentUp.setAttribute("class","contentUp");
+		nickname.innerText=msg.nickname;
+		if(msg.targetnickname==null||msg.targetnickname=="")
+			content.innerText="："+msg.content;
+		else{
+			content.innerText="回复 "+msg.targetnickname+"："+msg.content;
+		}
+		contentDown.setAttribute("class","contentDown");
+		date.innerText=msg.commentdate;
+
+		comment.appendChild(headportrait);
+		comment.appendChild(contentUp);
+		comment.appendChild(contentDown);
+		contentUp.appendChild(nickname);
+		contentUp.appendChild(content);
+		contentDown.appendChild(date);
+		contentDown.appendChild(answer);
+
+		document.getElementById("showComment").appendChild(comment);
+	}
+
+	function addComment(comments){
+
+		for (var i = 0; i <comments.length ; i++) {
+			if (comments[i].targetid==null) {
+				addOneComment(comments[i], 0);
+				for (var j = 0; j < comments.length; j++) {
+					if (comments[j].targetid!=null) {
+						if (comments[j].targetid==comments[i].id) {
+							addOneComment(comments[j], 1);
+						}
+					}
+				}
+			}
+
+		}
+	}
+	window.onload=function(){
+		$("#appBox").css({"top": $("nav").eq(0).outerHeight()})
+		$.ajax({
+			"url":"/api/v1/comment/load",
+			"type":"post",
+			"data":{
+				"logId":[[${session.travelDetail.travellog.id}]]
+			},
+			"success":function(data){
+				console.log(data)
+				if(data.code==200){
+					addComment(data.body)
+				}
+			},
+			"error":function(e){
+			}
+
+		})
+	}
+	$('#myModal').modal({
+		backdrop:'static',
+		show:false
+	})
+	function close(){
+		$('#myModal').modal('hide')
+	}
+	function open(){
+		$('#myModal').modal('show')
+	}
+	$(".open").click(open);
+	$(".close").click(close);
+
+	$("#login").click(function () {
+
+		var account = $("#account").val();
+		var password = $("#password").val();
+
+		$.ajax({
+			"url":"/api/v1/account/login/valid",
+			"type":"post",
+			"data":{
+				"account":account,
+				"password":password
+			},
+			"success":function(data){
+				if (data.code==500){
+					$(".tip").html(data.msg)
+					$(".tip").css({"opacity": 1}).stop(true).animate({"opacity":0},2000);
+				}else{
+					window.location.reload();
+				}
+			},
+			"error":function(e){
+			}
+
+		})
+	})
+
+
+
+</script>

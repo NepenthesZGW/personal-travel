@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+		<script th:src="@{/js/jquery-3.4.1.min.js}"></script>
+		<script th:src="@{/js/bootstrap.min.js}"></script>
+		<title></title>
+		<style type="text/css">
+
+			.navBox{
+				position: fixed;
+				width: 20%;
+			}
+			.navBox .navBox-up{
+				position: absolute;
+				width: 100%;
+				height: 120px;
+				top: 0;
+				background: #337ab7;
+			}
+			.navBox .navBox-up img{
+				position: absolute;
+				height: 120px;
+				width: 120px;
+				border-radius: 50%;
+			}
+			.navBox .navBox-up span{
+				position: absolute;
+				left: 130px;
+				top: 40px;
+				font-size: 16px;
+			}
+
+			.navBox .navBox-down{
+				position: absolute;
+				width: 100%;
+				top: 120px;
+			}
+			.navBox .navBox-down button{
+
+				width: 200px;
+				height: 60px;
+				margin-left: 25px;
+				margin-top: 20px;
+			}
+
+
+          #app{
+			  position: relative;
+			  left: 20%;
+			  top: 0;
+              width: 80%;
+              height: auto;
+             background:  #99FFCC;
+          }
+
+			#unEdit .msg{
+				margin: 20px;
+			}
+
+			#unEdit	img{
+				height: 120px;
+				width: 120px;
+
+			}
+
+			#headImg{
+				position: relative;
+				height: 120px;
+				width: 120px;
+			}
+			#headImg img{
+				position: absolute;
+				height: 100%;
+				width: 100%;
+			}
+			#headImg input{
+				position: absolute;
+				height: 100%;
+				width: 100%;
+				opacity: 0;
+			}
+		</style>
+	</head>
+	<body >
+
+
+
+		<div class="navBox">
+			<div class="navBox-up">
+				<img th:src="${session.person.headportrait}">
+				<span>[[${session.person.nickname}]]</span>
+			</div>
+			<div class="navBox-down">
+				<button type="button" class="btn btn-info" onclick="dump(2)">个人信息</button>
+				<button type="button" class="btn btn-info" onclick="dump(1)">个人日志</button>
+				<button type="button" class="btn btn-info" onclick="dump(0)">返回主页</button>
+				<button type="button" class="btn btn-info" onclick="cancellation()" >退出登录</button>
+			</div>
+		</div>
+		<div id="app">
+			<div class="panel panel-success">
+				<div class="panel-heading">个人信息</div>
+				<div class="panel-body">
+					<div id="unEdit">
+						<div class="msg" >
+							头像： <img th:src="${session.person.headportrait}" >
+						</div>
+						<div class="msg">
+							昵称：<span>[[${session.person.nickname}]]</span>
+						</div>
+						<div  class="msg">
+							性别：<span id="genderText"></span>
+						</div>
+						<div class="msg">
+							简介：<span>[[${session.person.introduction}]]</span>
+						</div>
+						<div  class="msg">
+							<button type="button" class="btn btn-warning" onclick="edit()">编辑</button>
+						</div>
+					</div>
+					<div id="edit" style="display: none;">
+						<form class="form-horizontal" role="form" onsubmit="return false;">
+							<div class="form-group">
+								<label for="uploadImg" class="col-sm-2 control-label">头像</label>
+								<div class="col-sm-10" id="headImg">
+									<img id="headImage" th:src="${session.person.headportrait}">
+									<input id="uploadImg" type="file" class="form-control" name="headportrait"  >
+								</div>
+							</div>
+							<div class="form-group">
+								<label for="nickname" class="col-sm-2 control-label">昵称</label>
+								<div class="col-sm-10">
+									<input type="text" class="form-control" name="nickname" id="nickname" th:value="${session.person.nickname}">
+								</div>
+							</div>
+							<div class="form-group">
+								<label  class="col-sm-2 control-label">性别</label>
+								<label class="radio-inline">
+									<input type="radio" name="gender"  value="M" id="man" > 男
+								</label>
+								<label class="radio-inline">
+									<input type="radio" name="gender"   value="W" id="woman"> 女
+								</label>
+							</div>
+							<div class="form-group">
+								<label  class="col-sm-2 control-label">简介</label>
+								<textarea name="introduction" class="form-control" rows="3" id="introduction" th:text="${session.person.introduction}"></textarea>
+							</div>
+							<div class="form-group">
+								<div class="col-sm-offset-2 col-sm-10">
+									<button id="uploadBtn" class="btn btn-default">确认</button>
+								</div>
+							</div>
+						</form>
+					</div>
+
+				</div>
+			</div>
+       </div>
+
+
+	</body>
+</html>
+<script th:inline="javascript">
+
+	window.onload=function () {
+		if ([[${session.person.gender}]]=="M") {
+			$("#genderText").text("男")
+			$("#man").attr("checked","checked")
+		}else{
+			$("#genderText").text("女")
+			$("#woman").attr("checked","checked")
+
+		}
+	}
+
+	var fd = new FormData();
+	$("#uploadImg").change (function(){
+		var files=this.files;
+		for (var i = 0; i < files.length; i++) {
+
+			if(this.value.match(/.jpg|.gif|.png/i)){
+				var image=document.getElementById("headImage")
+				image.src=window.URL.createObjectURL(files[i]);
+				fd.set("headportrait",files[i]);
+			}
+		}
+
+	})
+
+	function edit() {
+		$(".panel-heading").text("编辑信息")
+		$("#unEdit").css({"display":"none"})
+		$("#edit").css({"display":""})
+	}
+	$("#uploadBtn").click(function(){
+		$(".panel-heading").text("个人信息")
+		$("#unEdit").css({"display":""})
+		$("#edit").css({"display":"none"})
+
+
+		fd.set("nickname",$("#nickname").val());
+		var gender=$('input:radio[name="gender"]:checked').val();
+		fd.set("gender",gender);
+		fd.set("introduction",$("#introduction").val());
+		$.ajax({
+			type:"post",
+			url:  "/api/v1/person/edit",
+			processData: false,
+			contentType:false,
+			data:fd,
+			success:function(data){
+					window.location.reload();
+			},
+			error:function(e){
+				alert(e)
+				window.location.reload();
+			}
+		})
+
+	})
+
+	function cancellation(){
+		$.ajax({
+			"url":"/api/v1/account/login/cancellation",
+			"type":"post",
+			"success":function(data){
+				window.location.href="/";
+			},
+			"error":function(e){
+			}
+		})
+	}
+	function dump(type) {
+		if (type==0){
+			window.location.href="/";
+		}
+		else if (type==1){
+			window.location.href="/person/PersonalDynamic";
+		}
+		else if (type==2){
+			window.location.href="/person/personMessage";
+		}
+	}
+
+
+</script>

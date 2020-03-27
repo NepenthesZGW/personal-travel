@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+		<script th:src="@{/js/jquery-3.4.1.min.js}"></script>
+		<script th:src="@{/js/bootstrap.min.js}"></script>
+		<title></title>
+		<style type="text/css">
+			#app{
+				width: 80%;
+				height: auto;
+				margin: 50px auto;
+			}
+			#upload-box{
+				width: 100px;
+				height: 40px;
+				background: white url("/img/upload.jpg") no-repeat center;
+				border-radius: 50% ;
+			}
+			#upload-box input{
+				width: 100px;
+				height: 40px;
+				opacity: 0;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="app">
+			
+		
+		<div class="panel panel-info">
+				    <div class="panel-heading">
+				        <h3 class="panel-title">编辑旅行日志</h3>
+				    </div>
+				    <div class="panel-body">
+				        <form   class="form-horizontal" onsubmit="return false;" id="msg">
+				          <div class="form-group">
+				            <label for="title" class="col-sm-2 control-label">日志名称</label>
+				            <div class="col-sm-10">
+				              <input type="text" class="form-control" name="title" id="title" placeholder="请输入日志名">
+				            </div>
+				          </div>
+							<div class="form-group">
+								<label for="place" class="col-sm-2 control-label">地点</label>
+								<div class="col-sm-10">
+									<input type="text" class="form-control" name="place" id="place" placeholder="请输入地点">
+								</div>
+							</div>
+				          <div class="form-group">
+				            <label for="logdate" class="col-sm-2 control-label">日志日期</label>
+				            <div class="col-sm-10">
+				              <input type="date" class="form-control" name="logdate" id="logdate" >
+				            </div>
+				          </div>
+				          <div class="form-group">
+				        	   <label  class="col-sm-2 control-label">是否公开</label>
+				              <label class="radio-inline">
+				                  <input type="radio" name="overt" id="optionsRadios3" value="y" checked> 是
+				              </label>
+				              <label class="radio-inline">
+				                  <input type="radio" name="overt" id="optionsRadios4"  value="n"> 否
+				              </label>
+				          </div>
+				           <div class="form-group">
+				              <label for="introduction"  class="col-sm-2 control-label">旅程心得</label>
+				              <textarea name="introduction" id="introduction" class="form-control" rows="10"></textarea>
+				           </div>
+						   <div class="form-group">
+						     <label for="upLoad" class="col-sm-2 control-label">旅程图片与视频</label>
+						     <div  id="upload-box" class="col-sm-10">
+						       <input type="file" class="form-control" name="upLoad" id="upLoad"  multiple="multiple">
+						     </div>
+						   </div>
+						   <div class="form-group">
+						     <div class="container-fluid">
+						       <div id="pre" class="row">
+								   
+						       </div>
+						     </div>
+						   </div>
+				          <div class="form-group">
+				            <div class="col-sm-offset-2 col-sm-10">
+				              <button id="uploadBtn" class="btn btn-default">确定</button>
+				            </div>
+				          </div>
+				        </form>
+				    </div>
+					</div>
+					</div>
+	</body>
+</html>
+<script>
+	    var fd = new FormData();
+		var count=0;
+		$("#upLoad").change (function(){
+			var files=this.files;
+			for (var i = 0; i < files.length; i++) {
+				
+				if(this.value.match(/.jpg|.gif|.png/i)){
+				   var image=document.createElement("img");
+				   image.src=window.URL.createObjectURL(files[i]);
+				   image.style="width:100px;height:200px;";
+				   document.getElementById("pre").appendChild(image);
+				   fd.append("images",files[i]);
+				   count++;
+				}
+			}
+				
+		})
+		$("#uploadBtn").click(function () {
+			var msg =$("#msg").serializeArray();
+			$.each(msg,function(i,item){
+				fd.set(item.name,item.value)
+			});
+			console.log(fd)
+			$.ajax({
+				type:"post",
+				url:  "/api/v1/travel/create",
+				processData: false,
+				contentType:false,
+				data:fd,
+				success:function(data){
+				    if (data.code==200){
+				        window.location.href="/";
+				        return;
+                    }else{
+				    	console.log(data.body);
+				        alert(data.body.msg+",检测到的关键字有: ‘"+data.body.hits[0].words[0]+"’等等");
+				        alert("您可以改成私密日志，敏感字分析服务不会动用")
+                    }
+				},
+				error:function(e){
+                    alert(e)
+                    window.location.reload();
+				}
+			})
+		})
+
+</script>

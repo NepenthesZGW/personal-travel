@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+		<script th:src="@{/js/jquery-3.4.1.min.js}"></script>
+		<script th:src="@{/js/bootstrap.min.js}"></script>
+		<title></title>
+		<style type="text/css">
+			#app{
+				width: 80%;
+				height: auto;
+				margin: 50px auto;
+			}
+			#upload-box{
+				width: 100px;
+				height: 40px;
+				background: white url("/img/upload.jpg") no-repeat center;
+				border-radius: 50% ;
+			}
+			#upload-box input{
+				width: 100px;
+				height: 40px;
+				opacity: 0;
+			}
+
+			#imageBox{
+				width: 100px;
+				height: 200px;
+				position: relative;
+				margin-left: 10px;
+				float: left
+			}
+			#imageBox img{
+				width: 100px;
+				height: 200px;
+				position: absolute;
+			}
+			#imageBox button{
+				position: absolute;
+				left: 50px;
+			}
+
+		</style>
+	</head>
+	<body>
+		<div id="app">
+			
+		
+		<div class="panel panel-info">
+				    <div class="panel-heading">
+				        <h3 class="panel-title">修改旅行日志</h3>
+				    </div>
+				    <div class="panel-body">
+				        <form   class="form-horizontal" onsubmit="return false;" id="msg">
+				          <div class="form-group">
+				            <label for="title" class="col-sm-2 control-label">日志名称</label>
+				            <div class="col-sm-10">
+				              <input type="text" class="form-control" name="title" id="title" th:value="${session.travelDetail.travellog.title}">
+				            </div>
+				          </div>
+							<div class="form-group">
+								<label for="place" class="col-sm-2 control-label">地点</label>
+								<div class="col-sm-10">
+									<input type="text" class="form-control" name="place" id="place" th:value="${session.travelDetail.travellog.place}">
+								</div>
+							</div>
+				          <div class="form-group">
+				            <label for="logdate" class="col-sm-2 control-label">日志日期</label>
+				            <div class="col-sm-10">
+				              <input type="date" class="form-control" name="logdate" id="logdate">
+				            </div>
+				          </div>
+				          <div class="form-group">
+				        	   <label  class="col-sm-2 control-label">是否公开</label>
+				              <label class="radio-inline">
+				                  <input type="radio" name="overt" id="optionsRadios3" value="y" > 是
+				              </label>
+				              <label class="radio-inline">
+				                  <input type="radio" name="overt" id="optionsRadios4"  value="n"> 否
+				              </label>
+				          </div>
+				           <div class="form-group">
+				              <label for="introduction"  class="col-sm-2 control-label">旅程心得</label>
+				              <textarea name="introduction" id="introduction" class="form-control" rows="10" th:text="${session.travelDetail.content}"></textarea>
+				           </div>
+						   <div class="form-group">
+						     <label for="upLoad" class="col-sm-2 control-label">旅程图片</label>
+						     <div  id="upload-box" class="col-sm-10">
+						       <input type="file" class="form-control" name="upLoad" id="upLoad"  multiple="multiple">
+						     </div>
+						   </div>
+						   <div class="form-group">
+						     <div class="container-fluid">
+						       <div id="pre" class="row" >
+								   <div id="imageBox"  th:each="image:${session.travelDetail.images}">
+									   <img th:src="${image}" />
+									   <button type="button" class="btn btn-danger" onclick="moveOut(this,'none')">移除</button>
+								   </div>
+						       </div>
+						     </div>
+						   </div>
+				          <div class="form-group">
+				            <div class="col-sm-offset-2 col-sm-10">
+				              <button id="uploadBtn" class="btn btn-default">确定</button>
+				            </div>
+				          </div>
+				        </form>
+				    </div>
+					</div>
+					</div>
+	</body>
+</html>
+<script th:inline="javascript">
+
+	var deleteImage=[];
+	var images=[];
+	function moveOut(o,file){
+		if (file=="none") {
+			deleteImage.push($(o).siblings("img").attr("src"));
+			$(o).parent().remove();
+			console.log(deleteImage)
+		}else {
+			$(o).parent().remove();
+			images.splice(images.findIndex(item=>item===file),1);
+			console.log(images)
+		}
+	}
+
+	window.onload=function () {
+		var overt=[[${session.travelDetail.travellog.overt}]];
+		if (overt=="y"){
+			$("#optionsRadios3").attr("checked","checked");
+		}else {
+			$("#optionsRadios4").attr("checked","checked");
+		}
+		var logdate=[[${session.travelDetail.travellog.logdate}]];
+		var split = logdate.split("T");
+		document.getElementById("logdate").value=split[0];
+	}
+
+	    var fd = new FormData();
+		$("#upLoad").change (function(){
+			var files=this.files;
+			for (var i = 0; i < files.length; i++) {
+				
+				if(this.value.match(/.jpg|.gif|.png/i)){
+					var imageBox=document.createElement("div");
+					imageBox.setAttribute("id","imageBox");
+					var button=document.createElement("button");
+					button.innerText="移除";
+					button.setAttribute("class","btn btn-danger")
+					button.onclick=function () {
+						moveOut(this,files[i])
+					}
+				   var image=document.createElement("img");
+				   image.src=window.URL.createObjectURL(files[i]);
+				   imageBox.appendChild(image);
+				   imageBox.appendChild(button);
+				   document.getElementById("pre").appendChild(imageBox);
+					images.push(files[i])
+				}
+			}
+				
+		})
+		$("#uploadBtn").click(function () {
+			for (var i = 0; i <images.length ; i++) {
+				fd.append("images",images[i]);
+			}
+			for (var j = 0; j <deleteImage.length ; j++) {
+				fd.append("deleteImage",deleteImage[j]);
+			}
+
+			var msg =$("#msg").serializeArray();
+			$.each(msg,function(i,item){
+				fd.set(item.name,item.value)
+			});
+			console.log(fd)
+			$.ajax({
+				type:"post",
+				url:  "/api/v1/travel/editSubmit",
+				processData: false,
+				contentType:false,
+				data:fd,
+				success:function(data){
+				    if (data.code==200){
+				        window.location.href="/person/PersonalDynamic";
+				        return;
+                    }else{
+						console.log(data.body);
+						alert(data.body.msg+",检测到的关键字有: ‘"+data.body.hits[0].words[0]+"’等等");
+						alert("您可以改成私密日志，敏感字分析服务不会动用")
+                    }
+				},
+				error:function(e){
+                    alert(e)
+                    window.location.reload();
+				}
+			})
+		})
+
+</script>
